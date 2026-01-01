@@ -1,192 +1,153 @@
-import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160/build/three.module.js";
-import { FaceMesh } from "https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js";
-import { Camera } from "https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js";
+import {
+  FaceLandmarker,
+  FilesetResolver
+} from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/vision_bundle.mjs";
 
 /* =========================
-   Three.js 基本設定
+   THREE.JS SETUP
 ========================= */
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0xeeeeee);
 
-const near = 0.01;
-const far = 10;
-
-// カメラ初期距離（画面〜目）
-let cameraZ = 1.0;
-
-const camera = new THREE.PerspectiveCamera(
-  40,
-  window.innerWidth / window.innerHeight,
-  near,
-  far
-);
-camera.position.set(0, 0, cameraZ);
-camera.rotation.set(0, 0, 0);
-
-/* =========================
-   Renderer
-========================= */
-const renderer = new THREE.WebGLRenderer({ antialias: true });
+const canvas = document.getElementById("three");
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(window.devicePixelRatio);
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.shadowMap.enabled = true;
-document.body.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+
+/* ---- Camera (off-axis) ---- */
+const camera = new THREE.PerspectiveCamera(
+  45,
+  window.innerWidth / window.innerHeight,
+  0.01,
+  10
+);
 
 /* =========================
-   Light
+   WALL (screen-sized plane)
 ========================= */
-scene.add(new THREE.AmbientLight(0xffffff, 0.4));
 
-const light = new THREE.DirectionalLight(0xffffff, 1.0);
-light.position.set(0, 0.5, 1);
-light.castShadow = true;
-scene.add(light);
-
-/* =========================
-   壁（スクリーン）
-========================= */
 const wallZ = 0;
-
-function computeWallSize() {
-  const height =
-    2 * (cameraZ - wallZ) *
-    Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
-  const width = height * camera.aspect;
-  return { width, height };
-}
-
-let { width: wallWidth, height: wallHeight } = computeWallSize();
+const wallHeight = 1;
+const wallWidth = wallHeight * (window.innerWidth / window.innerHeight);
 
 const wall = new THREE.Mesh(
   new THREE.PlaneGeometry(wallWidth, wallHeight),
-  new THREE.MeshStandardMaterial({ color: 0xffffff })
+  new THREE.MeshBasicMaterial({ color: 0x111111 })
 );
 wall.position.z = wallZ;
 scene.add(wall);
 
 /* =========================
-   立方体（壁に接触）
+   CUBE (30% of screen width)
 ========================= */
-let cubeSize = wallWidth * 0.3;
+
+const cubeSize = wallWidth * 0.3;
 
 const cube = new THREE.Mesh(
   new THREE.BoxGeometry(cubeSize, cubeSize, cubeSize),
-  new THREE.MeshStandardMaterial({
-    color: 0x999999,
-    roughness: 0.35,
-    metalness: 0.1
-  })
+  new THREE.MeshNormalMaterial()
 );
 
-cube.position.set(0, 0, cubeSize / 2);
-cube.castShadow = true;
+// 壁に「貼り付いている」配置
+cube.position.z = cubeSize / 2;
 scene.add(cube);
 
 /* =========================
-   オフアクシス投影
+   CAMERA VIDEO SETUP
 ========================= */
-function updateOffAxisProjection() {
-  const eye = camera.position;
-  const dz = cameraZ - wallZ;
 
-  const left   = (-wallWidth / 2 - eye.x) * near / dz;
-  const right  = ( wallWidth / 2 - eye.x) * near / dz;
-  const bottom = (-wallHeight / 2 - eye.y) * near / dz;
-  const top    = ( wallHeight / 2 - eye.y) * near / dz;
+const video = document.getElementById("video");
 
-  camera.projectionMatrix.makePerspective(
-    left, right, top, bottom, near, far
-  );
+async function setupCamera() {
+  const stream = await navigator.mediaDevices.getUserMedia({
+    video: { width: 640, height: 480 }
+  });
+  video.srcObject = stream;
+  await video.play();
 }
 
 /* =========================
-   FaceMesh（顔追跡）
+   MEDIAPIPE FACE LANDMARKER
 ========================= */
-const video = document.getElementById("video");
 
-const faceMesh = new FaceMesh({
-  locateFile: (file) =>
-    `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
-});
+let faceLandmarker;
 
-faceMesh.setOptions({
-  maxNumFaces: 1,
-  refineLandmarks: true,
-  minDetectionConfidence: 0.5,
-  minTrackingConfidence: 0.5
-});
+async function setupFaceLandmarker() {
+  const vision = await FilesetResolver.forVisionTasks(
+    "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm"
+  );
 
-// 顔基準点（鼻先）
-const NOSE_INDEX = 1;
-
-// 正規化された顔位置
-let faceX = 0;
-let faceY = 0;
-let faceZ = 0;
-
-faceMesh.onResults((results) => {
-  if (!results.multiFaceLandmarks.length) return;
-
-  const nose = results.multiFaceLandmarks[0][NOSE_INDEX];
-
-  // -1〜1（左右・上下）
-  faceX = (nose.x - 0.5) * 2;
-  faceY = -(nose.y - 0.5) * 2;
-
-  // 奥行き（近いほどマイナス）
-  faceZ = nose.z;
-});
+  faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
+    baseOptions: {
+      modelAssetPath:
+        "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task"
+    },
+    runningMode: "VIDEO",
+    numFaces: 1
+  });
+}
 
 /* =========================
-   Webカメラ起動
+   OFF-AXIS CAMERA UPDATE
 ========================= */
-const cameraUtils = new Camera(video, {
-  onFrame: async () => {
-    await faceMesh.send({ image: video });
-  },
-  width: 640,
-  height: 480
-});
 
-cameraUtils.start();
+function updateCameraFromFace(face) {
+  // 鼻先ランドマーク（安定）
+  const p = face.keypoints[1];
+
+  // 正規化座標 → 実空間
+  const x = (p.x - 0.5) * wallWidth;
+  const y = -(p.y - 0.5) * wallHeight;
+
+  // 奥行き（顔が近いほど強く）
+  const z = THREE.MathUtils.clamp(-p.z, 0.1, 1.0);
+
+  camera.position.set(x, y, 1.2 - z);
+  camera.lookAt(0, 0, 0);
+}
 
 /* =========================
-   アニメーション
+   RENDER LOOP
 ========================= */
-function animate() {
+
+let lastTime = 0;
+
+function animate(time) {
   requestAnimationFrame(animate);
 
-  // 顔 → カメラ移動
-  const targetZ = 1.0 + faceZ * 0.8;
+  if (faceLandmarker && video.readyState >= 2) {
+    if (time !== lastTime) {
+      lastTime = time;
 
-  camera.position.x += (faceX * 0.3 - camera.position.x) * 0.1;
-  camera.position.y += (faceY * 0.3 - camera.position.y) * 0.1;
-  camera.position.z += (targetZ - camera.position.z) * 0.1;
+      const result = faceLandmarker.detectForVideo(video, time);
 
-  cameraZ = camera.position.z;
+      if (result.faceLandmarks.length > 0) {
+        updateCameraFromFace(result.faceLandmarks[0]);
+      }
+    }
+  }
 
-  updateOffAxisProjection();
   renderer.render(scene, camera);
 }
 
-animate();
+/* =========================
+   START
+========================= */
+
+async function start() {
+  await setupCamera();          // ← ここで必ず OS のカメラ許可が出る
+  await setupFaceLandmarker();
+  animate(0);
+}
+
+start();
 
 /* =========================
-   Resize
+   RESIZE
 ========================= */
+
 window.addEventListener("resize", () => {
+  renderer.setSize(window.innerWidth, window.innerHeight);
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-
-  const size = computeWallSize();
-  wallWidth = size.width;
-  wallHeight = size.height;
-
-  wall.geometry.dispose();
-  wall.geometry = new THREE.PlaneGeometry(wallWidth, wallHeight);
-
-  cubeSize = wallWidth * 0.3;
-  cube.geometry.dispose();
-  cube.geometry = new THREE.BoxGeometry(cubeSize, cubeSize, cubeSize);
-  cube.position.z = cubeSize / 2;
 });
