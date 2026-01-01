@@ -2,26 +2,27 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0, user-scalable=no"
-  />
-  <title>Face Cube Illusion</title>
+  <title>Face-tracked Pop-out Cube</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="style.css" />
+
+  <!-- Three.js -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+
+  <!-- MediaPipe Tasks Vision -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/vision_bundle.js"></script>
 </head>
+
 <body>
+  <!-- Three.js canvas -->
+  <canvas id="three"></canvas>
 
-<button id="startBtn">START CAMERA</button>
+  <!-- Debug: camera preview -->
+  <div id="debug">
+    <video id="video" autoplay playsinline muted></video>
+    <canvas id="overlay"></canvas>
+  </div>
 
-<video id="video" playsinline muted></video>
-<canvas id="three"></canvas>
-
-<!-- Three.js -->
-<script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
-
-<!-- MediaPipe Tasks Vision -->
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/vision_bundle.js"></script>
-
-<script src="main.js"></script>
+  <script type="module" src="main.js"></script>
 </body>
 </html>
