@@ -1,28 +1,27 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <title>Screen Attached Cube Illusion</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <!-- CSS -->
-  <link rel="stylesheet" href="style.css">
-
-  <!-- Three.js -->
-  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
-
-  <!-- MediaPipe Tasks Vision -->
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/vision_bundle.js"></script>
+  <meta charset="utf-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, user-scalable=no"
+  />
+  <title>Face Cube Illusion</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
-
 <body>
-  <!-- Three.js canvas -->
-  <canvas id="three"></canvas>
 
-  <!-- hidden video (camera source) -->
-  <video id="video" autoplay playsinline></video>
+<button id="startBtn">START CAMERA</button>
 
-  <!-- JS -->
-  <script type="module" src="main.js"></script>
+<video id="video" playsinline muted></video>
+<canvas id="three"></canvas>
+
+<!-- Three.js -->
+<script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+
+<!-- MediaPipe Tasks Vision -->
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/vision_bundle.js"></script>
+
+<script src="main.js"></script>
 </body>
 </html>
