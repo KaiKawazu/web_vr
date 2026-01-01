@@ -1,0 +1,23 @@
+html, body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background: #eeeeee;
+}
+
+canvas {
+  display: block;
+}
+
+video {
+  display: none;
+}
+
+/* ディスプレイ枠 */
+#frame {
+  position: fixed;
+  inset: 0;
+  border: 14px solid black;
+  box-sizing: border-box;
+  pointer-events: none;
+}
