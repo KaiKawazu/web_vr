@@ -1,17 +1,17 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Off-Axis Cube Face Tracking</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta charset="utf-8" />
+  <title>Off-Axis Face Tracked Cube</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <video id="video" autoplay playsinline muted></video>
+<canvas id="three"></canvas>
 
-<div id="preview">
-  <video id="previewVideo" autoplay playsinline muted></video>
+<div id="debug">
+  <video id="debugVideo" autoplay playsinline muted></video>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
