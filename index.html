@@ -2,17 +2,27 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <title>Off-Axis Head Tracked Cube</title>
-  <link rel="stylesheet" href="style.css" />
-</head>
-<body>
+  <title>Screen Attached Cube Illusion</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- カメラ映像（非表示） -->
+  <!-- CSS -->
+  <link rel="stylesheet" href="style.css">
+
+  <!-- Three.js -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+
+  <!-- MediaPipe Tasks Vision -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/vision_bundle.js"></script>
+</head>
+
+<body>
+  <!-- Three.js canvas -->
+  <canvas id="three"></canvas>
+
+  <!-- hidden video (camera source) -->
   <video id="video" autoplay playsinline></video>
 
-  <!-- 画面フレーム -->
-  <div id="frame"></div>
-
+  <!-- JS -->
   <script type="module" src="main.js"></script>
 </body>
 </html>
