@@ -1,22 +1,29 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8" />
-  <title>Off-Axis Face Tracked Cube</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <title>Face Tracking + Perspective Base</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="style.css" />
+
+  <!-- Three.js -->
+  <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+
+  <!-- MediaPipe Tasks Vision -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/vision_bundle.js"></script>
 </head>
 <body>
 
-<video id="video" autoplay playsinline muted></video>
-<canvas id="three"></canvas>
+  <!-- Three.js 描画 -->
+  <canvas id="three-canvas"></canvas>
 
-<div id="debug">
-  <video id="debugVideo" autoplay playsinline muted></video>
-</div>
+  <!-- Face Tracking プレビュー -->
+  <video id="video" autoplay playsinline muted></video>
+  <canvas id="overlay"></canvas>
 
-<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/vision_bundle.js"></script>
-<script src="main.js"></script>
-
+  <!-- JS -->
+  <script type="module" src="main.js"></script>
 </body>
 </html>
