@@ -1,23 +1,57 @@
-const video = document.getElementById("video");
-const preview = document.getElementById("preview");
-const pctx = preview.getContext("2d");
+import { FaceLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/vision_bundle.js";
 
+let scene, camera, renderer;
+let cube;
+let video, previewVideo;
 let faceLandmarker;
-let lastTime = -1;
 
-/* ---------------- Camera ---------------- */
+const WALL_Z = 0;
+const CAMERA_Z = 1; // 仮の初期距離
 
-async function setupCamera() {
+init();
+await initFaceTracking();
+animate();
+
+/* ---------- 初期化 ---------- */
+
+function init() {
+  scene = new THREE.Scene();
+
+  camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.01, 10);
+
+  renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  document.body.appendChild(renderer.domElement);
+
+  // 壁サイズ
+  const wallWidth = 1;
+  const wallHeight = wallWidth * window.innerHeight / window.innerWidth;
+
+  // 立方体（横30%）
+  const cubeSize = wallWidth * 0.3;
+  const geometry = new THREE.BoxGeometry(cubeSize, cubeSize, cubeSize);
+  const material = new THREE.MeshNormalMaterial();
+  cube = new THREE.Mesh(geometry, material);
+
+  cube.position.set(0, 0, cubeSize / 2);
+  scene.add(cube);
+
+  window.addEventListener("resize", onResize);
+}
+
+/* ---------- Face Tracking ---------- */
+
+async function initFaceTracking() {
+  video = document.getElementById("video");
+  previewVideo = document.getElementById("previewVideo");
+
   const stream = await navigator.mediaDevices.getUserMedia({
     video: { facingMode: "user" }
   });
+
   video.srcObject = stream;
-  await video.play();
-}
+  previewVideo.srcObject = stream;
 
-/* ---------------- MediaPipe ---------------- */
-
-async function setupFaceLandmarker() {
   const vision = await FilesetResolver.forVisionTasks(
     "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm"
   );
@@ -32,108 +66,53 @@ async function setupFaceLandmarker() {
   });
 }
 
-/* ---------------- Three.js ---------------- */
+/* ---------- オフアクシス投影 ---------- */
 
-const canvas = document.getElementById("three");
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-renderer.setPixelRatio(window.devicePixelRatio);
-renderer.setSize(window.innerWidth, window.innerHeight);
+function updateCameraFromFace(face) {
+  const nose = face[1]; // 鼻先
 
-const scene = new THREE.Scene();
+  // MediaPipe座標 → 正規化
+  const x = (nose.x - 0.5) * 2;
+  const y = -(nose.y - 0.5) * 2;
+  const z = nose.z; // 奥行き（負方向が近い）
 
-const camera = new THREE.PerspectiveCamera();
-camera.matrixAutoUpdate = false;
+  const distance = 1.2 + (-z * 2);
 
-const light = new THREE.DirectionalLight(0xffffff, 1);
-light.position.set(0, 0, 1);
-scene.add(light);
+  const left = (-0.5 - x * 0.5) * distance;
+  const right = (0.5 - x * 0.5) * distance;
+  const top = (0.5 - y * 0.5) * distance;
+  const bottom = (-0.5 - y * 0.5) * distance;
 
-/* ---- Wall ---- */
-const wall = new THREE.Mesh(
-  new THREE.PlaneGeometry(1, 1),
-  new THREE.MeshBasicMaterial({ color: 0x111111 })
-);
-scene.add(wall);
+  camera.projectionMatrix.makePerspective(
+    left,
+    right,
+    top,
+    bottom,
+    0.01,
+    10
+  );
 
-/* ---- Cube ---- */
-const cube = new THREE.Mesh(
-  new THREE.BoxGeometry(1, 1, 1),
-  new THREE.MeshNormalMaterial()
-);
-scene.add(cube);
-
-/* ---------------- Resize ---------------- */
-
-function resize() {
-  renderer.setSize(window.innerWidth, window.innerHeight);
-}
-window.addEventListener("resize", resize);
-
-/* ---------------- Off-axis projection ---------------- */
-
-function updateCamera(faceX, faceY, faceZ) {
-  const w = window.innerWidth;
-  const h = window.innerHeight;
-
-  // wall size = screen
-  wall.scale.set(w, h, 1);
-
-  // cube size = 30% of screen width
-  const cubeSize = w * 0.3;
-  cube.scale.set(cubeSize, cubeSize, cubeSize);
-  cube.position.set(0, 0, cubeSize / 2);
-
-  const near = 10;
-  const far = 5000;
-
-  // convert face position
-  const cx = (-faceX + 0.5) * w;
-  const cy = (faceY - 0.5) * h;
-  const cz = faceZ * 1000 + 600;
-
-  const left = (-w / 2 - cx) * near / cz;
-  const right = (w / 2 - cx) * near / cz;
-  const top = (h / 2 - cy) * near / cz;
-  const bottom = (-h / 2 - cy) * near / cz;
-
-  camera.projectionMatrix.makePerspective(left, right, top, bottom, near, far);
-  camera.matrixWorld.makeTranslation(cx, cy, cz);
-  camera.matrixWorldInverse.copy(camera.matrixWorld).invert();
+  camera.position.set(x * 0.5, y * 0.5, distance);
 }
 
-/* ---------------- Loop ---------------- */
+/* ---------- ループ ---------- */
 
-function loop() {
-  requestAnimationFrame(loop);
+async function animate() {
+  requestAnimationFrame(animate);
 
-  if (video.readyState < 2) return;
-
-  if (video.currentTime !== lastTime) {
-    lastTime = video.currentTime;
-    const res = faceLandmarker.detectForVideo(video, performance.now());
-
-    pctx.clearRect(0, 0, preview.width, preview.height);
-    pctx.drawImage(video, 0, 0, preview.width, preview.height);
-
-    if (res.faceLandmarks.length > 0) {
-      const nose = res.faceLandmarks[0][1];
-
-      updateCamera(
-        nose.x,     // X
-        nose.y,     // Y
-        -nose.z     // Z (invert)
-      );
+  if (faceLandmarker && video.readyState >= 2) {
+    const result = faceLandmarker.detectForVideo(video, performance.now());
+    if (result.faceLandmarks.length > 0) {
+      updateCameraFromFace(result.faceLandmarks[0]);
     }
   }
 
   renderer.render(scene, camera);
 }
 
-/* ---------------- Start ---------------- */
+/* ---------- Resize ---------- */
 
-(async () => {
-  await setupCamera();
-  await setupFaceLandmarker();
-  resize();
-  loop();
-})();
+function onResize() {
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  camera.aspect = window.innerWidth / window.innerHeight;
+}
