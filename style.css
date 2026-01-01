@@ -5,25 +5,33 @@ html, body {
   background: black;
 }
 
-#three {
+/* Three.js 全画面 */
+#three-canvas {
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
 }
 
+/* 右下のカメラプレビュー */
 #video {
-  display: none;
-}
-
-/* 右下の動作確認用 */
-#debug {
   position: fixed;
   right: 10px;
   bottom: 10px;
   width: 160px;
+  aspect-ratio: 4 / 3;
   border: 2px solid white;
+  transform: scaleX(-1); /* 鏡表示（視覚用） */
   z-index: 10;
+  background: black;
 }
 
-#debug video {
-  width: 100%;
+/* ランドマーク描画用 */
+#overlay {
+  position: fixed;
+  right: 10px;
+  bottom: 10px;
+  width: 160px;
+  aspect-ratio: 4 / 3;
+  pointer-events: none;
+  z-index: 11;
 }
