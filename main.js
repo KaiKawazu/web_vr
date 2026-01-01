@@ -1,76 +1,61 @@
+import {
+  FaceLandmarker,
+  FilesetResolver
+} from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/vision_bundle.js";
+
 const video = document.getElementById("video");
-const debugVideo = document.getElementById("debugVideo");
-const canvas = document.getElementById("three");
+const overlay = document.getElementById("overlay");
+const ctx = overlay.getContext("2d");
 
-/* ---------------- Camera ---------------- */
+/* =========================
+   Three.js セットアップ
+========================= */
+const canvas = document.getElementById("three-canvas");
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
 
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(
+  45,
+  window.innerWidth / window.innerHeight,
+  0.01,
+  10
+);
+camera.position.z = 1;
+
+const light = new THREE.DirectionalLight(0xffffff, 1);
+light.position.set(0, 0, 1);
+scene.add(light);
+
+/* テスト用キューブ（後で錯視用に置き換える） */
+const cube = new THREE.Mesh(
+  new THREE.BoxGeometry(0.3, 0.3, 0.3),
+  new THREE.MeshStandardMaterial({ color: 0x00ffcc })
+);
+scene.add(cube);
+
+/* =========================
+   カメラ起動
+========================= */
 async function setupCamera() {
   const stream = await navigator.mediaDevices.getUserMedia({
-    video: { facingMode: "user" }
+    video: {
+      facingMode: "user"
+    }
   });
   video.srcObject = stream;
-  debugVideo.srcObject = stream;
   await video.play();
 }
 
-/* ---------------- Three.js ---------------- */
-
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(window.devicePixelRatio);
-
-const scene = new THREE.Scene();
-
-/* カメラは動かさない */
-const camera = new THREE.Camera();
-camera.near = 0.01;
-camera.far = 10;
-scene.add(camera);
-
-/* 壁サイズ（実世界比） */
-const screenW = 1;
-const screenH = screenW * window.innerHeight / window.innerWidth;
-
-/* 壁（見えない） */
-const wall = new THREE.Mesh(
-  new THREE.PlaneGeometry(screenW, screenH),
-  new THREE.MeshBasicMaterial({ visible: false })
-);
-scene.add(wall);
-
-/* 立方体（横30%） */
-const cubeSize = screenW * 0.3;
-const cube = new THREE.Mesh(
-  new THREE.BoxGeometry(cubeSize, cubeSize, cubeSize),
-  new THREE.MeshNormalMaterial()
-);
-cube.position.z = cubeSize / 2;
-scene.add(cube);
-
-/* ---------------- Off Axis Projection ---------------- */
-
-function updateOffAxis(eyeX, eyeY, eyeZ) {
-  const near = camera.near;
-  const far = camera.far;
-
-  const left   = (-screenW / 2 - eyeX) * near / eyeZ;
-  const right  = ( screenW / 2 - eyeX) * near / eyeZ;
-  const bottom = (-screenH / 2 - eyeY) * near / eyeZ;
-  const top    = ( screenH / 2 - eyeY) * near / eyeZ;
-
-  camera.projectionMatrix.makePerspective(left, right, top, bottom, near, far);
-}
-
-/* ---------------- MediaPipe ---------------- */
-
-let faceLandmarker;
-
-async function setupFaceTracking() {
+/* =========================
+   MediaPipe 初期化
+========================= */
+async function setupFaceLandmarker() {
   const vision = await FilesetResolver.forVisionTasks(
-    "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/wasm"
+    "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm"
   );
 
-  faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
+  return await FaceLandmarker.createFromOptions(vision, {
     baseOptions: {
       modelAssetPath:
         "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task"
@@ -80,34 +65,76 @@ async function setupFaceTracking() {
   });
 }
 
-function trackFace() {
-  const now = performance.now();
-  const res = faceLandmarker.detectForVideo(video, now);
+/* =========================
+   ループ処理
+========================= */
+function drawLandmarks(landmarks) {
+  ctx.clearRect(0, 0, overlay.width, overlay.height);
 
-  if (res.faceLandmarks.length > 0) {
-    const nose = res.faceLandmarks[0][1];
-
-    /* MediaPipe → Three.js 座標 */
-    const eyeX = (nose.x - 0.5) * screenW;
-    const eyeY = -(nose.y - 0.5) * screenH;
-    const eyeZ = 0.6 + nose.z * 2; // 奥行き
-
-    updateOffAxis(eyeX, eyeY, eyeZ);
+  ctx.fillStyle = "red";
+  for (const p of landmarks) {
+    ctx.beginPath();
+    ctx.arc(
+      (1 - p.x) * overlay.width, // ← 左右反転補正（重要）
+      p.y * overlay.height,
+      2,
+      0,
+      Math.PI * 2
+    );
+    ctx.fill();
   }
 }
 
-/* ---------------- Loop ---------------- */
+async function main() {
+  await setupCamera();
+  const faceLandmarker = await setupFaceLandmarker();
 
-function animate() {
-  requestAnimationFrame(animate);
-  if (faceLandmarker) trackFace();
-  renderer.render(scene, camera);
+  overlay.width = video.videoWidth;
+  overlay.height = video.videoHeight;
+
+  let lastTime = -1;
+
+  function loop() {
+    const now = video.currentTime;
+    if (now !== lastTime) {
+      lastTime = now;
+
+      const result = faceLandmarker.detectForVideo(video, now);
+
+      if (result.faceLandmarks.length > 0) {
+        const landmarks = result.faceLandmarks[0];
+        drawLandmarks(landmarks);
+
+        /* 鼻先を基準にカメラ制御 */
+        const nose = landmarks[1];
+
+        const x = (nose.x - 0.5) * 2;
+        const y = (nose.y - 0.5) * 2;
+        const z = nose.z;
+
+        /* Three.js 側（左右逆にならない） */
+        camera.position.x = -x * 0.3;
+        camera.position.y = -y * 0.3;
+        camera.position.z = 1 + z * 0.8;
+
+        camera.lookAt(0, 0, 0);
+      }
+    }
+
+    renderer.render(scene, camera);
+    requestAnimationFrame(loop);
+  }
+
+  loop();
 }
 
-/* ---------------- Start ---------------- */
+main();
 
-(async () => {
-  await setupCamera();
-  await setupFaceTracking();
-  animate();
-})();
+/* =========================
+   リサイズ対応
+========================= */
+window.addEventListener("resize", () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
