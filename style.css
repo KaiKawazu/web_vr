@@ -2,13 +2,25 @@ html, body {
   margin: 0;
   padding: 0;
   overflow: hidden;
-  background: #000;
+  background: black;
 }
 
-canvas {
-  display: block;
+#three {
+  position: fixed;
+  top: 0;
+  left: 0;
 }
 
-video {
+#video {
   display: none;
+}
+
+#startBtn {
+  position: fixed;
+  z-index: 10;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 18px;
+  padding: 12px 20px;
 }
