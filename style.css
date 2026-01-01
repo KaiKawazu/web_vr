@@ -5,28 +5,25 @@ html, body {
   background: black;
 }
 
-canvas {
-  display: block;
+#three {
+  position: fixed;
+  inset: 0;
 }
 
 #video {
   display: none;
 }
 
-/* 右下のトラッキング確認用 */
-#preview {
+/* 右下の動作確認用 */
+#debug {
   position: fixed;
   right: 10px;
   bottom: 10px;
   width: 160px;
-  height: 120px;
-  border: 1px solid #444;
-  background: black;
+  border: 2px solid white;
   z-index: 10;
 }
 
-#preview video {
+#debug video {
   width: 100%;
-  height: 100%;
-  object-fit: cover;
 }
