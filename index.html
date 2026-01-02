@@ -2,28 +2,59 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <title>Face Tracking + Perspective Base</title>
+  <title>Off-Axis Illusion - XP Silver Minimal</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <!-- CSS -->
   <link rel="stylesheet" href="style.css" />
-
-  <!-- Three.js -->
   <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
-
-  <!-- MediaPipe Tasks Vision -->
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/vision_bundle.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/vision_bundle.js"></script>
 </head>
 <body>
+  <div id="controls" class="xp-window">
+    <div class="xp-title-bar" id="xp-title-bar">
+      <div class="xp-title-text">Settings</div>
+      <div class="xp-window-buttons">
+        <button class="xp-win-btn" id="btn-toggle-ui">_</button>
+        <button class="xp-win-btn">□</button>
+        <button class="xp-win-btn xp-close">×</button>
+      </div>
+    </div>
+    
+    <div class="xp-content" id="xp-content">
+      <div class="monitor xp-inset">
+        RAW X:<span id="raw-x">0.00</span> Y:<span id="raw-y">0.00</span> Z:<span id="raw-z">0.00</span>
+      </div>
+      
+      <div class="slider-group">
+        <label>Image Source:</label>
+        <input type="file" id="input-file" accept="image/*" class="xp-input">
+        <input type="text" id="input-url" placeholder="http://..." class="xp-input" style="margin-top:2px;">
+      </div>
 
-  <!-- Three.js 描画 -->
+      <button id="btn-calibrate" class="xp-button">Center View</button>
+      <button id="btn-shadow" class="xp-button">Shadows & Light: ON</button>
+      
+      <div class="slider-group">
+        <label>X/Y Sensitivity: <span id="val-move" class="val-label">3.5</span></label>
+        <input type="range" id="range-move" min="0" max="10" step="0.1" value="3.5" class="xp-range">
+      </div>
+      <div class="slider-group">
+        <label>Z Smooth: <span id="val-z-smooth" class="val-label">0.20</span></label>
+        <input type="range" id="range-z-smooth" min="0.01" max="1.0" step="0.01" value="0.2" class="xp-range">
+      </div>
+      <div class="slider-group">
+        <label>Z Resp: <span id="val-z-sens" class="val-label">100</span></label>
+        <input type="range" id="range-z-sens" min="0" max="200" step="1" value="100" class="xp-range">
+      </div>
+      <div class="slider-group">
+        <label>Base Dist: <span id="val-depth" class="val-label">5.0</span></label>
+        <input type="range" id="range-depth" min="1" max="15" step="0.1" value="5.0" class="xp-range">
+      </div>
+    </div>
+  </div>
+
   <canvas id="three-canvas"></canvas>
+  <video id="video" autoplay playsinline muted style="display:none;"></video>
 
-  <!-- Face Tracking プレビュー -->
-  <video id="video" autoplay playsinline muted></video>
-  <canvas id="overlay"></canvas>
-
-  <!-- JS -->
   <script type="module" src="main.js"></script>
 </body>
 </html>
