@@ -1,80 +1,149 @@
-html, body {
-  margin: 0; padding: 0; overflow: hidden;
-  background: #008080; 
-  font-family: "Tahoma", "MS UI Gothic", sans-serif;
-  -webkit-font-smoothing: none;
+:root {
+  --bg-color: #1a1a1a;
+  --panel-bg: rgba(0, 0, 0, 0.7);
+  --border-color: rgba(255, 255, 255, 0.2);
+  --accent-color: #ffffff;
+  --text-color: #e0e0e0;
+  --font-main: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
-#three-canvas { position: fixed; top: 0; left: 0; z-index: 1; }
+body {
+  margin: 0;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  font-family: var(--font-main);
+  overflow: hidden;
+}
 
-/* Windows XP Silver Theme - No rounded corners */
+#three-canvas {
+  display: block;
+  width: 100vw;
+  height: calc(var(--vh, 1vh) * 100);
+}
+
+/* GUI Container */
 .xp-window {
-  position: fixed; top: 15px; left: 15px; width: 260px;
-  background: #f4f4f0;
-  border: 1px solid #757575;
-  border-radius: 0; /* 角を丸くしない */
-  box-shadow: 4px 4px 10px rgba(0,0,0,0.3);
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  width: 260px;
+  background: var(--panel-bg);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
   z-index: 100;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  transition: opacity 0.3s ease;
 }
 
+/* Minimal Title Bar */
 .xp-title-bar {
-  background: linear-gradient(to bottom, #fcfcfe 0%, #cfd1e5 50%, #b8bad5 51%, #adafca 100%);
-  padding: 4px 6px 4px 10px;
-  display: flex; justify-content: space-between; align-items: center;
-  border-radius: 0; /* 角を丸くしない */
-  height: 26px;
-  border-bottom: 1px solid #757575;
-  cursor: pointer;
+  padding: 10px 15px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: grab;
 }
 
 .xp-title-text {
-  color: #333; font-weight: bold; font-size: 11px;
-  text-shadow: 1px 1px 0px #fff;
-  user-select: none;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--accent-color);
 }
 
 .xp-win-btn {
-  width: 21px; height: 21px; border: 1px solid #fff; border-radius: 0; /* 角を丸くしない */
-  background: linear-gradient(to bottom, #efefef, #bcbcbc);
-  color: #333; font-weight: bold; margin-left: 2px;
-  cursor: pointer; font-size: 12px;
-}
-.xp-win-btn.xp-close { 
-  background: linear-gradient(to bottom, #f59e8e, #e04328); 
-  color: white;
-}
-
-.xp-content { 
-  padding: 12px; 
-  display: block; /* デフォルト表示 */
+  background: none;
+  border: none;
+  color: var(--text-color);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0 5px;
+  opacity: 0.5;
 }
 
-/* 畳んだ状態 */
-.xp-content.collapsed {
-  display: none;
+.xp-win-btn:hover { opacity: 1; }
+
+/* Content Area */
+.xp-content {
+  padding: 15px;
+  max-height: 80vh;
+  overflow-y: auto;
 }
 
-.monitor.xp-inset {
-  background: #ffffff; border: 2px inset #d5d5d5;
-  padding: 6px; margin-bottom: 12px;
-  font-family: 'Courier New', monospace; font-size: 11px; color: #333;
+.xp-content.collapsed { display: none; }
+
+/* Monitor / Stats */
+.monitor {
+  font-family: monospace;
+  font-size: 10px;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 2px;
+  margin-bottom: 15px;
+  color: #888;
+}
+
+/* Controls */
+.slider-group {
+  margin-bottom: 15px;
+}
+
+label {
+  display: block;
+  font-size: 10px;
+  margin-bottom: 6px;
+  color: #aaa;
+  text-transform: uppercase;
+}
+
+.val-label {
+  float: right;
+  color: var(--accent-color);
+}
+
+/* Custom Inputs */
+.xp-input, .xp-range, .xp-button {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
+  font-size: 11px;
+  padding: 6px;
+  border-radius: 2px;
+  box-sizing: border-box;
+  outline: none;
 }
 
 .xp-button {
-  width: 100%; margin-bottom: 10px; padding: 6px;
-  background: #f0f0f0;
-  border-top: 2px solid #fff; border-left: 2px solid #fff;
-  border-right: 2px solid #a0a0a0; border-bottom: 2px solid #a0a0a0;
-  cursor: pointer; font-size: 11px; color: #000;
-  border-radius: 0; /* 角を丸くしない */
+  cursor: pointer;
+  margin-bottom: 8px;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.05em;
 }
 
-.xp-input {
-  width: 100%; background: white; border: 2px inset #d5d5d5;
-  padding: 3px; box-sizing: border-box; font-size: 11px; margin-top: 4px;
-  border-radius: 0; /* 角を丸くしない */
+.xp-button:hover {
+  background: var(--accent-color);
+  color: #000;
 }
 
-.slider-group { margin: 12px 0; font-size: 11px; color: #333; }
-.val-label { float: right; font-weight: bold; color: #444; }
-.xp-range { width: 100%; cursor: pointer; height: 18px; margin-top: 5px; }
+/* Custom Range Slider */
+.xp-range {
+  -webkit-appearance: none;
+  height: 2px;
+  padding: 0;
+  background: var(--border-color);
+}
+
+.xp-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  background: var(--accent-color);
+  border-radius: 50%;
+  cursor: pointer;
+}
