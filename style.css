@@ -1,37 +1,80 @@
 html, body {
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
-  background: black;
+  margin: 0; padding: 0; overflow: hidden;
+  background: #008080; 
+  font-family: "Tahoma", "MS UI Gothic", sans-serif;
+  -webkit-font-smoothing: none;
 }
 
-/* Three.js 全画面 */
-#three-canvas {
-  position: fixed;
-  top: 0;
-  left: 0;
+#three-canvas { position: fixed; top: 0; left: 0; z-index: 1; }
+
+/* Windows XP Silver Theme - No rounded corners */
+.xp-window {
+  position: fixed; top: 15px; left: 15px; width: 260px;
+  background: #f4f4f0;
+  border: 1px solid #757575;
+  border-radius: 0; /* 角を丸くしない */
+  box-shadow: 4px 4px 10px rgba(0,0,0,0.3);
+  z-index: 100;
 }
 
-/* 右下のカメラプレビュー */
-#video {
-  position: fixed;
-  right: 10px;
-  bottom: 10px;
-  width: 160px;
-  aspect-ratio: 4 / 3;
-  border: 2px solid white;
-  transform: scaleX(-1); /* 鏡表示（視覚用） */
-  z-index: 10;
-  background: black;
+.xp-title-bar {
+  background: linear-gradient(to bottom, #fcfcfe 0%, #cfd1e5 50%, #b8bad5 51%, #adafca 100%);
+  padding: 4px 6px 4px 10px;
+  display: flex; justify-content: space-between; align-items: center;
+  border-radius: 0; /* 角を丸くしない */
+  height: 26px;
+  border-bottom: 1px solid #757575;
+  cursor: pointer;
 }
 
-/* ランドマーク描画用 */
-#overlay {
-  position: fixed;
-  right: 10px;
-  bottom: 10px;
-  width: 160px;
-  aspect-ratio: 4 / 3;
-  pointer-events: none;
-  z-index: 11;
+.xp-title-text {
+  color: #333; font-weight: bold; font-size: 11px;
+  text-shadow: 1px 1px 0px #fff;
+  user-select: none;
 }
+
+.xp-win-btn {
+  width: 21px; height: 21px; border: 1px solid #fff; border-radius: 0; /* 角を丸くしない */
+  background: linear-gradient(to bottom, #efefef, #bcbcbc);
+  color: #333; font-weight: bold; margin-left: 2px;
+  cursor: pointer; font-size: 12px;
+}
+.xp-win-btn.xp-close { 
+  background: linear-gradient(to bottom, #f59e8e, #e04328); 
+  color: white;
+}
+
+.xp-content { 
+  padding: 12px; 
+  display: block; /* デフォルト表示 */
+}
+
+/* 畳んだ状態 */
+.xp-content.collapsed {
+  display: none;
+}
+
+.monitor.xp-inset {
+  background: #ffffff; border: 2px inset #d5d5d5;
+  padding: 6px; margin-bottom: 12px;
+  font-family: 'Courier New', monospace; font-size: 11px; color: #333;
+}
+
+.xp-button {
+  width: 100%; margin-bottom: 10px; padding: 6px;
+  background: #f0f0f0;
+  border-top: 2px solid #fff; border-left: 2px solid #fff;
+  border-right: 2px solid #a0a0a0; border-bottom: 2px solid #a0a0a0;
+  cursor: pointer; font-size: 11px; color: #000;
+  border-radius: 0; /* 角を丸くしない */
+}
+
+.xp-input {
+  width: 100%; background: white; border: 2px inset #d5d5d5;
+  padding: 3px; box-sizing: border-box; font-size: 11px; margin-top: 4px;
+  border-radius: 0; /* 角を丸くしない */
+}
+
+.slider-group { margin: 12px 0; font-size: 11px; color: #333; }
+.val-label { float: right; font-weight: bold; color: #444; }
+.xp-range { width: 100%; cursor: pointer; height: 18px; margin-top: 5px; }
