@@ -2,11 +2,10 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <title>Off-Axis Illusion - Lo-Fi Minimal</title>
+  <title>Off-Axis Illusion - XP Edition</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <link rel="stylesheet" href="style.css" />
   <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
-  <script type="module" src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/vision_bundle.js"></script>
   <style>
     .tab-container { display: flex; border-bottom: 1px solid var(--border-color); margin-bottom: 15px; }
     .tab-btn { flex: 1; background: none; border: none; color: #888; font-size: 10px; padding: 8px; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; }
@@ -18,56 +17,39 @@
 <body>
   <div id="controls" class="xp-window">
     <div class="xp-title-bar" id="xp-title-bar">
-      <div class="xp-title-text">Control Panel</div>
-      <div class="xp-win-btn" id="btn-toggle-ui">－</div>
+      <div class="xp-title">SETTINGS</div>
+      <button class="xp-win-btn" id="btn-toggle-ui">－</button>
     </div>
-    
     <div class="xp-content" id="xp-content">
       <div class="tab-container">
-        <button class="tab-btn active" data-tab="tab-sensor">Sensor</button>
-        <button class="tab-btn" data-tab="tab-object">Object</button>
+        <button class="tab-btn active" data-tab="tab-object">Object</button>
         <button class="tab-btn" data-tab="tab-lighting">Lighting</button>
+        <button class="tab-btn" data-tab="tab-system">System</button>
       </div>
 
-      <div id="tab-sensor" class="tab-content active">
-        <div class="monitor">X:<span id="raw-x">0.00</span> Y:<span id="raw-y">0.00</span> Z:<span id="raw-z">0.00</span></div>
+      <div id="tab-object" class="tab-content active">
         <div class="slider-group">
-          <label>X/Y Sensitivity <span id="val-move" class="val-label">6.2</span></label>
-          <input type="range" id="range-move" min="0" max="10" step="0.1" value="6.2" class="xp-range">
-        </div>
-        <div class="slider-group">
-          <label>Base Distance <span id="val-depth" class="val-label">9.2</span></label>
-          <input type="range" id="range-depth" min="2" max="15" step="0.1" value="9.2" class="xp-range">
-        </div>
-        <div class="slider-group">
-          <label>Z Sensitivity <span id="val-z-sens" class="val-label">103</span></label>
-          <input type="range" id="range-z-sens" min="0" max="300" step="1" value="103" class="xp-range">
-        </div>
-        <button id="btn-calibrate" class="xp-button">Recenter</button>
-        <div class="slider-group"><label>Source</label><input type="file" id="input-file" accept="image/*" class="xp-input"></div>
-      </div>
-
-      <div id="tab-object" class="tab-content">
-        <div class="slider-group">
+          <button id="btn-toggle-frame" class="xp-button" style="margin-bottom: 15px;">Frame: On</button>
           <label>Mode</label>
           <select id="select-mode" class="xp-input">
-            <option value="CUBE">Cube (Pop-out)</option>
-            <option value="HOLE">Hole (Depth)</option>
+            <option value="CUBE">CUBE (Pop-out)</option>
+            <option value="HOLE" selected>HOLE (Pit)</option>
           </select>
         </div>
-        <div id="cube-params">
+        
+        <div id="cube-params" style="display:none;">
           <div class="slider-group">
-            <label>Cube XY Size <span id="val-cube-xy" class="val-label">0.5</span></label>
-            <input type="range" id="range-cube-xy" min="0.1" max="3.0" step="0.05" value="0.5" class="xp-range">
+            <label>Cube XY <span id="val-cube-xy" class="val-label">1.0</span></label>
+            <input type="range" id="range-cube-xy" min="0.1" max="2.0" step="0.05" value="1.0" class="xp-range">
           </div>
           <div class="slider-group">
-            <label>Cube Z Size <span id="val-cube-z" class="val-label">0.5</span></label>
+            <label>Cube Z <span id="val-cube-z" class="val-label">0.5</span></label>
             <input type="range" id="range-cube-z" min="0.1" max="5.0" step="0.05" value="0.5" class="xp-range">
           </div>
         </div>
-        <div id="hole-params" style="display:none;">
+        <div id="hole-params">
           <div class="slider-group">
-            <label>Hole XY Size <span id="val-hole-scale" class="val-label">0.5</span></label>
+            <label>Hole Size <span id="val-hole-scale" class="val-label">0.5</span></label>
             <input type="range" id="range-hole-scale" min="0.1" max="1.0" step="0.01" value="0.5" class="xp-range">
           </div>
           <div class="slider-group">
@@ -79,17 +61,37 @@
 
       <div id="tab-lighting" class="tab-content">
         <button id="btn-shadow" class="xp-button">Light: On</button>
-        <div class="slider-group">
-          <label>Light Intensity <span id="val-light-int" class="val-label">180</span></label>
-          <input type="range" id="range-light-int" min="0" max="500" step="1" value="180" class="xp-range">
+        <div class="slider-group" style="margin-top:15px;">
+          <label>Intensity <span id="val-light-int" class="val-label">150</span></label>
+          <input type="range" id="range-light-int" min="0" max="1000" step="10" value="150" class="xp-range">
         </div>
-        <button id="btn-random-light" class="xp-button">Randomize Position</button>
+        <button id="btn-random-light" class="xp-button">Random Light Pos</button>
+      </div>
+
+      <div id="tab-system" class="tab-content">
+        <div class="monitor">
+          X:<span id="raw-x">0</span> Y:<span id="raw-y">0</span> Z:<span id="raw-z">0</span>
+        </div>
+        <div class="slider-group">
+          <label>Face Sens <span id="val-move" class="val-label">2.0</span></label>
+          <input type="range" id="range-move" min="0.1" max="10.0" step="0.1" value="2.0" class="xp-range">
+        </div>
+        <div class="slider-group">
+          <label>Distance <span id="val-depth" class="val-label">5.0</span></label>
+          <input type="range" id="range-depth" min="1.0" max="20.0" step="0.5" value="5.0" class="xp-range">
+        </div>
+        <div class="slider-group">
+          <label>Z Sens <span id="val-z-sens" class="val-label">15.0</span></label>
+          <input type="range" id="range-z-sens" min="0.1" max="50.0" step="0.1" value="15.0" class="xp-range">
+        </div>
+        <button id="btn-calibrate" class="xp-button">Calibrate Center</button>
+        <input type="file" id="input-file" accept="image/*" style="display:none;">
+        <button onclick="document.getElementById('input-file').click()" class="xp-button" style="margin-top:10px;">Change Image</button>
       </div>
     </div>
   </div>
-
   <canvas id="three-canvas"></canvas>
-  <video id="video" autoplay playsinline muted style="display:none;"></video>
+  <video id="video" style="display:none;" playsinline></video>
   <script type="module" src="main.js"></script>
 </body>
 </html>
