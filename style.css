@@ -147,3 +147,21 @@ label {
   border-radius: 50%;
   cursor: pointer;
 }
+
+/* Mobile Responsiveness */
+@media (max-width: 480px) {
+  .xp-window {
+    width: auto;
+    left: 10px;
+    right: 10px;
+    top: 10px;
+  }
+  
+  .xp-content {
+    max-height: 40vh; /* Allow more space for VIEW on mobile */
+  }
+
+  .xp-title-bar {
+    padding: 8px 10px;
+  }
+}
