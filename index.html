@@ -62,8 +62,8 @@
       font-family: sans-serif;
       font-size: 1.5rem;
       flex-direction: column;
-      display: none;
-      /* Hidden by default */
+
+
     }
 
     .spinner {
@@ -181,7 +181,7 @@
         </div>
         <div class="slider-group">
           <label>XY Sens <span id="val-move" class="val-label">2.0</span></label>
-          <input type="range" id="range-move" min="0.1" max="10.0" step="0.1" value="2.0" class="xp-range">
+          <input type="range" id="range-move" min="0.1" max="5.0" step="0.1" value="2.0" class="xp-range">
         </div>
         <div class="slider-group">
           <label>Z Distance <span id="val-depth" class="val-label">5.0</span></label>
@@ -189,7 +189,7 @@
         </div>
         <div class="slider-group">
           <label>Z Sens <span id="val-z-sens" class="val-label">15.0</span></label>
-          <input type="range" id="range-z-sens" min="0.1" max="50.0" step="0.1" value="15.0" class="xp-range">
+          <input type="range" id="range-z-sens" min="0.1" max="30.0" step="0.1" value="15.0" class="xp-range">
         </div>
         <button id="btn-calibrate" class="xp-button">Calibrate Center</button>
         <input type="file" id="input-file" accept="image/*" style="display:none;">
