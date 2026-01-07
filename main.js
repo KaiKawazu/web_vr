@@ -5,6 +5,20 @@ import { FaceLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
 const xpContent = document.getElementById("xp-content");
 const btnToggleUI = document.getElementById("btn-toggle-ui");
 const xpTitleBar = document.getElementById("xp-title-bar");
+const loaderEl = document.getElementById("loader");
+
+// Loading State Management
+const loadingState = {
+    texture: false,
+    vision: false
+};
+
+const updateLoadingState = (key) => {
+    loadingState[key] = true;
+    if (loadingState.texture && loadingState.vision) {
+        loaderEl.style.display = "none";
+    }
+};
 
 const toggleUI = () => {
     xpContent.classList.toggle("collapsed");
@@ -222,6 +236,7 @@ let currentTexture = textureLoader.load("img/default.jpg", (tex) => {
     tex.colorSpace = THREE.SRGBColorSpace;
     tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
     updateUIFrameTexture();
+    updateLoadingState('texture');
 });
 
 // --- 以下、元のロジックをそのまま保持 ---
@@ -301,7 +316,7 @@ function updateUV() {
 let objectBaseScale = 1.0;
 
 const fbxLoader = new FBXLoader();
-const loaderEl = document.getElementById("loader");
+// loaderEl moved to top
 
 function loadFBX(source) {
     if (!source) return;
@@ -569,7 +584,9 @@ async function main() {
         }
         renderer.render(scene, camera); requestAnimationFrame(loop);
     }
-    applyMode(); loop();
+    applyMode();
+    updateLoadingState('vision');
+    loop();
 }
 main();
 window.onresize = () => { renderer.setSize(window.innerWidth, window.innerHeight); applyMode(); };
