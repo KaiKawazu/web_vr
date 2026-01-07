@@ -24,7 +24,7 @@ tabs.forEach(tab => {
     };
 });
 
-
+// --- Constants & Variables (保持) ---
 const video = document.getElementById("video");
 const rawXDisp = document.getElementById("raw-x"), rawYDisp = document.getElementById("raw-y"), rawZDisp = document.getElementById("raw-z");
 const rangeMove = document.getElementById("range-move"), rangeDepth = document.getElementById("range-depth"), rangeZSens = document.getElementById("range-z-sens");
@@ -47,7 +47,7 @@ let smoothedZ = 0.0, shadowsEnabled = true, frameEnabled = true;
 // Dynamic Frame Size
 let currentFrameSize = { w: 1.0, h: 1.0 };
 
-
+// --- Three.js Setup (保持) ---
 const canvas = document.getElementById("three-canvas");
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
 renderer.setPixelRatio(window.devicePixelRatio);
@@ -61,7 +61,7 @@ renderer.toneMappingExposure = 1.2;
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
 
-
+// --- Window Frame Drawing Logic (Slim Title & Small UI) ---
 const uiCanvas = document.createElement("canvas");
 const uiCtx = uiCanvas.getContext("2d");
 const uiTexture = new THREE.CanvasTexture(uiCanvas);
@@ -70,7 +70,14 @@ uiTexture.colorSpace = THREE.SRGBColorSpace;
 function updateUIFrameTexture() {
     const tex = currentTexture.image;
     if (!tex) return;
-
+    // Resize canvas to match window aspect ratio (prevent distortion)
+    // Use devicePixelRatio to ensure crisp text
+    const dpr = window.devicePixelRatio || 1;
+    // Set canvas dimension to match physical screen pixels or a high enough value
+    // On mobile, screen might be small (e.g. 375px width), so * dpr might be ~1000px.
+    // 2048 is usually safe, but let's dynamic.
+    // Let's use a fixed large height to ensure the "fit height" logic gives high res.
+    const targetHeight = 2048;
     const aspect = window.innerWidth / window.innerHeight;
 
     // Canvas dimensions
@@ -83,17 +90,19 @@ function updateUIFrameTexture() {
 
     uiCtx.clearRect(0, 0, w, h);
 
-
+    // Draw Image: "Fit to Height" (Vertical width match)
+    // "Fit to Height" -> renderH = h.
     const imgAspect = tex.width / tex.height;
 
     const renderH = h;
     const renderW = h * imgAspect;
-    const offsetX = (w - renderW) / 2;
+    const offsetX = (w - renderW) / 2; // Center horizontally
     const offsetY = 0;
 
     uiCtx.drawImage(tex, offsetX, offsetY, renderW, renderH);
 
-
+    // Re-declare aspect variable used below if needed (it is defined above)
+    // const aspect = ... (ALREADY DEFINED)
     let sw, sh;
     if (selectMode.value === "CUBE") {
         const size = parseFloat(rangeCubeXY.value);
@@ -110,15 +119,15 @@ function updateUIFrameTexture() {
     const x = (w - sw) / 2, y = (h - sh) / 2;
 
     // --- スリム化設定 ---
-    const titleH = Math.max(22, h / 45);
-    const menuH = Math.max(20, h / 50);
-    const borderWidth = Math.max(4, w / 400);
+    const titleH = Math.max(22, h / 45);  // 縦幅を大幅に細く
+    const menuH = Math.max(20, h / 50);   // メニューもスリムに
+    const borderWidth = Math.max(4, w / 400); // 左右下の太さは維持気味
     const radius = 8;
     const startX = x - borderWidth, totalW = sw + (borderWidth * 2);
 
     uiCtx.save();
 
-
+    // 1. 半透明フレーム
     uiCtx.globalAlpha = 0.88;
     const glassGrad = uiCtx.createLinearGradient(startX, y - titleH - menuH, startX, y + sh);
     glassGrad.addColorStop(0, "rgba(255, 255, 255, 0.25)");
@@ -131,16 +140,17 @@ function updateUIFrameTexture() {
     uiCtx.lineWidth = 0.8;
     uiCtx.stroke();
 
-
+    // 4. 小さなコントロールボタン (Layout calculation first)
     const btnW = titleH * 1.0, btnH = titleH * 0.7;
     const btnY = y - menuH - titleH + (titleH - btnH) / 2;
 
     // Calculate button X positions
-    const cX = startX + totalW - btnW - 8;
-    const mX = cX - btnW - 4;
-    const miX = mX - btnW - 4;
+    const cX = startX + totalW - btnW - 8; // Close (Rightmost)
+    const mX = cX - btnW - 4;              // Max
+    const miX = mX - btnW - 4;             // Min
 
-
+    // Determine visibility
+    // If the leftmost button (Min) is too close to the left edge, hide Min/Max
     const hideMinMax = (miX < startX + 20);
     const leftmostBtnX = hideMinMax ? cX : miX;
 
@@ -154,7 +164,8 @@ function updateUIFrameTexture() {
         icon(bx, btnY, btnW, btnH);
     };
 
-
+    // Draw buttons
+    // Close (Always visible)
     drawSmallBtn(cX, "rgba(230, 80, 80, 0.9)", (bx, by, bw, bh) => {
         const p = 6; uiCtx.beginPath();
         uiCtx.moveTo(bx + p, by + p); uiCtx.lineTo(bx + bw - p, by + bh - p);
@@ -162,16 +173,17 @@ function updateUIFrameTexture() {
     });
 
     if (!hideMinMax) {
-
+        // Max
         drawSmallBtn(mX, "rgba(255, 255, 255, 0.1)", (bx, by, bw, bh) => { uiCtx.strokeRect(bx + 6, by + 5, bw - 12, bh - 10); });
-
+        // Min
         drawSmallBtn(miX, "rgba(255, 255, 255, 0.1)", (bx, by, bw, bh) => { uiCtx.beginPath(); uiCtx.moveTo(bx + 6, by + bh - 5); uiCtx.lineTo(bx + bw - 6, by + bh - 5); uiCtx.stroke(); });
     }
 
-
+    // 2. タイトル文字 (小さく繊細に) - Check collision with buttons
     uiCtx.globalAlpha = 1.0;
     uiCtx.fillStyle = "white";
-
+    // Increase font weight for readability on small screens?
+    // Mobile browsers might render thin fonts poorly. Use 600 or bold.
     uiCtx.font = `600 ${titleH * 0.55}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
     uiCtx.textAlign = "left";
     const titleText = "Photo.app";
@@ -179,11 +191,12 @@ function updateUIFrameTexture() {
     const titleEndX = startX + 12 + titleW;
 
     if (titleEndX < leftmostBtnX - 5) {
-
+        // Pixel-snap text position
         uiCtx.fillText(titleText, Math.round(startX + 12), Math.round(y - menuH - titleH / 2 + (titleH * 0.55 * 0.35)));
     }
 
-
+    // 3. メニューバー (Restore and check visibility)
+    // Hide menus if window is too narrow (using same logic as Min/Max buttons or similar)
     if (!hideMinMax) {
         uiCtx.fillStyle = "rgba(255, 255, 255, 0.75)";
         uiCtx.fillRect(x, y - menuH, sw, menuH);
@@ -192,7 +205,7 @@ function updateUIFrameTexture() {
         const menus = ["File", "Edit", "View", "Help"];
         let curX = x + 12;
         menus.forEach(m => {
-
+            // Simple check: don't draw if it goes out of bounds
             if (curX + uiCtx.measureText(m).width < x + sw) {
                 uiCtx.fillText(m, curX, y - menuH / 2 + 5);
                 curX += uiCtx.measureText(m).width + 15;
@@ -211,7 +224,7 @@ let currentTexture = textureLoader.load("img/default.jpg", (tex) => {
     updateUIFrameTexture();
 });
 
-
+// --- 以下、元のロジックをそのまま保持 ---
 const spotLight = new THREE.SpotLight(0xffffff, 150);
 spotLight.castShadow = true;
 spotLight.angle = Math.PI / 6;
@@ -219,8 +232,8 @@ spotLight.penumbra = 0.1;
 spotLight.decay = 1.5;
 spotLight.distance = 60;
 spotLight.shadow.mapSize.set(4096, 4096);
-spotLight.shadow.bias = -0.00001;
-spotLight.shadow.normalBias = 0.001;
+spotLight.shadow.bias = -0.00001; // Reduced bias significantly to fix light leak (peter panning)
+spotLight.shadow.normalBias = 0.001; // Small normal bias to help with self-shadowing
 scene.add(spotLight);
 
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
@@ -257,7 +270,8 @@ scene.add(holeGroup);
 scene.add(holeGroup);
 
 const whiteBackPlane = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), whiteMat);
-
+// slightly behind Z=0 to avoid z-fighting with frame? No, frame is hole. 
+// Coplanar with wall? Wall is at 0.
 whiteBackPlane.position.set(0, 0, 0);
 whiteBackPlane.receiveShadow = true;
 scene.add(whiteBackPlane);
@@ -283,7 +297,7 @@ function updateUV() {
     if (holeGroup.visible) Object.values(holePlanes).forEach(updateObjUV);
 }
 
-
+// Add variable for base scale
 let objectBaseScale = 1.0;
 
 const fbxLoader = new FBXLoader();
@@ -291,24 +305,32 @@ const loaderEl = document.getElementById("loader");
 
 function loadFBX(source) {
     if (!source) return;
-    loaderEl.style.display = "flex";
+    loaderEl.style.display = "flex"; // Show loader
     const url = (typeof source === 'string') ? source : URL.createObjectURL(source);
     fbxLoader.load(
         url,
         (object) => {
             if (loadedObject) objectGroup.remove(loadedObject);
-
+            // Auto-scale to fit nicely in 1x1x1 area roughly
             const box = new THREE.Box3().setFromObject(object);
             const size = new THREE.Vector3(); box.getSize(size);
             const maxDim = Math.max(size.x, size.y, size.z);
-            objectBaseScale = 1.0 / (maxDim || 1.0);
+            objectBaseScale = 1.0 / (maxDim || 1.0); // Store base scale
 
-
+            // Correct approach:
+            // 1. Get bounds of whole object.
+            // 2. Compute center offset.
+            // 3. Apply negative offset to object.position? No, that moves the object processing origin.
+            // 4. Wrap in a parent "Holder" group.
+            // loadedObject = new THREE.Group(); loadedObject.add(object);
+            // object.position.sub(center);
+            // objectGroup.add(loadedObject);
+            // NOW loadedObject is centered at 0,0,0. We can scale loadedObject freely.
 
             const center = new THREE.Vector3(); box.getCenter(center);
             const wrapper = new THREE.Group();
             wrapper.add(object);
-            object.position.copy(center).multiplyScalar(-1);
+            object.position.copy(center).multiplyScalar(-1); // Center object within wrapper
 
             loadedObject = wrapper;
             objectGroup.add(loadedObject);
@@ -317,19 +339,23 @@ function loadFBX(source) {
                 if (child.isMesh) {
                     child.castShadow = true;
                     child.receiveShadow = true;
-
+                    // Ensure material works with lights
+                    if (!child.material.isMeshStandardMaterial) {
+                        // Keep color if possible or default
+                        //  child.material = new THREE.MeshStandardMaterial({ color: child.material.color || 0xffffff });
+                    }
                 }
             });
 
             applyMode();
-            loaderEl.style.display = "none";
+            loaderEl.style.display = "none"; // Hide loader
         },
         (xhr) => {
-
+            // console.log((xhr.loaded / xhr.total * 100) + '% loaded');
         },
         (error) => {
             console.error(error);
-            loaderEl.style.display = "none";
+            loaderEl.style.display = "none"; // Hide on error
             alert("Failed to load FBX");
         }
     );
@@ -342,7 +368,7 @@ function applyMode() {
     document.getElementById('object-params').style.display = (mode === "OBJECT" || mode === "HAND" || mode === "CAT") ? "block" : "none";
     document.getElementById('btn-upload-fbx').style.display = (mode === "HAND" || mode === "CAT") ? "none" : "block";
 
-
+    // Reset visibility
     cubeGroup.visible = false;
     holeGroup.visible = false;
     objectGroup.visible = false;
@@ -361,7 +387,7 @@ function applyMode() {
         cubePlanes.right.rotation.y = Math.PI / 2; cubePlanes.right.scale.set(sZ, sXY, 1); cubePlanes.right.position.set(sXY / 2, 0, sZ / 2);
         spotLight.position.set(5, 5, 10); spotLight.lookAt(0, 0, 0);
     } else {
-
+        // HOLE & OBJECT Logic
         wall.castShadow = true;
 
         let frameW, frameH;
@@ -371,12 +397,12 @@ function applyMode() {
             objectGroup.visible = true;
             whiteBackPlane.visible = true;
 
-            frameW = 1.0; frameH = 1.0;
+            frameW = 1.0; frameH = 1.0; // Defaults
 
             if (loadedObject) {
                 const finalScale = objectBaseScale * parseFloat(rangeObjScale.value);
                 loadedObject.scale.setScalar(finalScale);
-
+                // Apply both rotations
                 loadedObject.rotation.x = THREE.MathUtils.degToRad(parseFloat(rangeObjRotX.value));
                 loadedObject.rotation.y = THREE.MathUtils.degToRad(parseFloat(rangeObjRot.value));
                 loadedObject.updateMatrixWorld(true);
@@ -388,17 +414,29 @@ function applyMode() {
                 frameW = size.x + margin;
                 frameH = size.y + margin;
 
+                // Pop-out Logic: Object sits ON the wall (Z=0) and extends forward (+Z)
+                // Or centers on wall? "Pop out" usually means sticking out.
+                // LoadedObject center is 0,0,0. Size Z is size.z.
+                // Range Z is [-size.z/2, size.z/2].
+                // Make MinZ = 0 -> Move Center to +size.z/2.
+                // Subtract small offset to prevent light leak (gap) between object and plane
+                // Use rangeObjSink value. Negative moves back (sinks), positive moves forward. 
+                // Wait, users wants to "sink" -> which usually means move -Z.
+                // In my logic: MaxZ = size.z/2. To sit on wall, pos.z = size.z/2.
+                // To sink, we reduce Z.
+                // Default was -0.02.
+                // Let's use the raw value: loadedObject.position.set(0, 0, (size.z / 2) - parseFloat(rangeObjSink.value));
                 const sinkDepth = parseFloat(rangeObjSink.value);
                 loadedObject.position.set(0, 0, (size.z / 2) - sinkDepth);
 
-
+                // Back Plane sizing
                 whiteBackPlane.scale.set(frameW, frameH, 1);
             } else {
-                whiteBackPlane.scale.set(1, 1, 1);
+                whiteBackPlane.scale.set(1, 1, 1); // Default
             }
             currentFrameSize = { w: frameW, h: frameH };
 
-            spotLight.position.set(5, 5, 10); spotLight.lookAt(0, 0, 0);
+            spotLight.position.set(5, 5, 10); spotLight.lookAt(0, 0, 0); // Front light for pop-out
 
         } else {
             // HOLE Mode
@@ -412,11 +450,11 @@ function applyMode() {
             frameH = baseH * hS;
             currentFrameSize = { w: frameW, h: frameH };
 
-
+            // Apply common material
             Object.values(holePlanes).forEach(p => p.material = commonMat);
 
-
-            const whw = frameW, whh = frameH;
+            // Existing HOLE logic (0 to -d)
+            const whw = frameW, whh = frameH; // Renamed for clarity, using calculated frameW/H
             holePlanes.back.scale.set(whw, whh, 1); holePlanes.back.position.set(0, 0, -d);
             holePlanes.top.rotation.x = Math.PI / 2; holePlanes.top.scale.set(whw, d, 1); holePlanes.top.position.set(0, whh / 2, -d / 2);
             holePlanes.bottom.rotation.x = -Math.PI / 2; holePlanes.bottom.scale.set(whw, d, 1); holePlanes.bottom.position.set(0, -whh / 2, -d / 2);
@@ -425,7 +463,7 @@ function applyMode() {
             spotLight.position.set(3, 3, 15); spotLight.lookAt(0, 0, -d / 2);
         }
 
-
+        // Shared Wall Geometry Update
         wall.geometry.dispose();
         const baseW = aspect * 2, baseH = 2;
         const w = baseW * 10, h = baseH * 10;
@@ -454,7 +492,9 @@ btnShadow.onclick = () => {
         m.material = new NewMat({ map: currentTexture, side: THREE.DoubleSide });
         if (shadowsEnabled) { m.material.roughness = 1.0; m.material.metalness = 0.0; }
     });
-
+    // Re-apply white mat if in object mode (simple fix: just re-call applyMode logic or ensure reference is correct. 
+    // Actually, applyMode handles material swapping usually? No, applyMode handles geometry.
+    // Material is set here. We need to respect the white mat request.
     if (selectMode.value === "OBJECT" || selectMode.value === "HAND" || selectMode.value === "CAT") {
         Object.values(holePlanes).forEach(p => p.material = whiteMat);
     }
@@ -498,7 +538,8 @@ inputFbx.onchange = (e) => {
     loadFBX(e.target.files[0]);
 };
 btnRandomLight.onclick = () => {
-
+    // Restrict random light to prevent it from going behind the wall
+    // Increased Y range as requested, while keeping Z safe (in front)
     spotLight.position.set((Math.random() - 0.5) * 10, (Math.random() - 0.5) * 20, 10 + Math.random() * 15);
     spotLight.lookAt(0, 0, selectMode.value === "HOLE" ? -parseFloat(rangeHoleDepth.value) / 2 : 0);
 };
